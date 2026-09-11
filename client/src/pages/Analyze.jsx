@@ -8,7 +8,6 @@ import {
   captureNetworkSignal,
   formatDateTime,
   formatDuration,
-  formatMs,
 } from '../network';
 
 const STEPS = ['Archivo', 'Contexto', 'Informe'];
