@@ -742,6 +742,22 @@ app.get('/api/metrics', (req, res) => {
 // Phase 2: WhatsApp Cloud API webhooks
 app.use('/api/whatsapp', createWhatsAppRouter(db));
 
+app.get('/', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'RespuestaTrack API - Detección de Bots',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      operators: '/api/operators',
+      orders: '/api/orders',
+      metrics: '/api/metrics',
+      imports: '/api/imports',
+    },
+  });
+});
+
 app.get(['/health', '/api/health'], (_req, res) => {
   res.json({ ok: true, status: 'healthy', timestamp: new Date().toISOString() });
 });
