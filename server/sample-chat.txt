@@ -1,0 +1,10 @@
+10/09/2026, 9:00:00 a. m. - Juan Cliente: Hola, quiero un combo 2
+10/09/2026, 9:01:15 a. m. - Ana Operadora: Claro, ¿dirección?
+10/09/2026, 9:02:00 a. m. - Juan Cliente: Calle 5 #10
+10/09/2026, 9:02:30 a. m. - Ana Operadora: Listo, 25 min
+10/09/2026, 10:15:00 a. m. - María Pérez: Buenas, pedido de pizza familiar
+10/09/2026, 10:18:00 a. m. - Ana Operadora: ¿Algún adicional?
+10/09/2026, 10:18:40 a. m. - María Pérez: No, gracias
+10/09/2026, 10:19:00 a. m. - Ana Operadora: Va en camino
+10/09/2026, 11:00:00 a. m. - Carlos: Necesito domicilio de 2 hamburguesas
+10/09/2026, 11:05:30 a. m. - Pedro Operador: Recibido, ¿bebida?
