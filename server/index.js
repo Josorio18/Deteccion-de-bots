@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const upload = multer({
@@ -742,8 +742,8 @@ app.get('/api/metrics', (req, res) => {
 // Phase 2: WhatsApp Cloud API webhooks
 app.use('/api/whatsapp', createWhatsAppRouter(db));
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
+app.get(['/health', '/api/health'], (_req, res) => {
+  res.json({ ok: true, status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {
