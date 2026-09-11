@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "npm --prefix server start",
-    "build": "npm --prefix server install",
+    "build": "npm --prefix client run build",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server install",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "start:server": "npm --prefix server start",
