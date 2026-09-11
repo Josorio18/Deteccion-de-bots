@@ -5,6 +5,8 @@
   "scripts": {
     "start": "npm --prefix server start",
     "build": "npm --prefix client run build",
+    "predeploy": "npm run build",
+    "deploy": "npm run build && wrangler deploy",
     "build:client": "npm --prefix client run build",
     "build:server": "npm --prefix server install",
     "dev:server": "npm --prefix server run dev",

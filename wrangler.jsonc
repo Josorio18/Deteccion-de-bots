@@ -3,7 +3,6 @@
   "name": "deteccion-de-bots",
   "compatibility_date": "2026-09-11",
   "assets": {
-    "directory": "./client/dist",
-    "binding": "ASSETS"
+    "directory": "./client/dist"
   }
 }
