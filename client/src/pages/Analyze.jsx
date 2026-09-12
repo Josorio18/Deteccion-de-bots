@@ -622,6 +622,11 @@ export default function Analyze() {
                                     : null)
                               )}
                         </strong>
+                        {o.timing_precision === 'minute' && o.response_ms != null && (
+                          <small className="muted">
+                            Nominal: {formatDuration(o.response_ms)}
+                          </small>
+                        )}
                         {o.timing_precision && (
                           <small className="muted">
                             {o.timing_precision === 'ms'
@@ -725,6 +730,11 @@ export default function Analyze() {
                             ? `${formatDuration(interaction.response_min_ms)} – ${formatDuration(interaction.response_max_ms)}`
                             : formatDuration(interaction.response_ms)}
                         </strong><br />
+                        {interaction.timing_precision === 'minute' && (
+                          <small>
+                            Nominal: {formatDuration(interaction.response_ms)}<br />
+                          </small>
+                        )}
                         <small>
                           {interaction.timing_precision === 'minute'
                             ? 'Rango posible: WhatsApp solo exportó minutos'
@@ -737,6 +747,7 @@ export default function Analyze() {
                         <small>
                           Desde mensaje anterior: {formatDuration(interaction.since_previous_ms)}<br />
                           Acumulado desde inicio: {formatDuration(interaction.elapsed_from_start_ms)}<br />
+                          Respuesta = hora de respuesta − hora del mensaje recibido<br />
                           {interaction.same_minute
                             ? 'Mismo minuto exportado; no se puede saber el orden dentro del minuto.'
                             : 'Minutos distintos en la exportación.'}
