@@ -131,6 +131,64 @@ function looksLikeOrder(text) {
   return ORDER_KEYWORDS.some((k) => lower.includes(k));
 }
 
+const ORDER_TAKING_PATTERNS = [
+  /^(bueno|bien|listo|perfecto|claro|de acuerdo)\b/i,
+  /señor|señora|caballero/i,
+  /ya (lo|te|le) (tomo|tengo|apunto|anoto)/i,
+  /voy a (tomar|anotar|apuntar|revisar)/i,
+  /qué desea|que desea|qué va a llevar|que va a llevar/i,
+  /me confirma|confírmame|confirmame|dirección|direccion/i,
+  /en cuánto|en cuanto|para cuándo|para cuando/i,
+];
+
+const ACKNOWLEDGEMENT_PATTERNS = [
+  /^(bueno|bien|listo|perfecto|ok|okay|vale|claro|entendido|de acuerdo)\b/i,
+  /^(sí|si),?\s*(señor|señora)?[.!]?$/i,
+  /recibido|entendido|ya reviso|ya miro/i,
+];
+
+function classifyInteraction(customerText, operatorText) {
+  const customer = String(customerText || '').trim();
+  const operator = String(operatorText || '').trim();
+  if (ORDER_TAKING_PATTERNS.some((pattern) => pattern.test(operator))) {
+    return looksLikeOrder(customer) ? 'toma_de_pedido' : 'confirmacion_reaccion';
+  }
+  if (ACKNOWLEDGEMENT_PATTERNS.some((pattern) => pattern.test(operator))) {
+    return 'confirmacion_reaccion';
+  }
+  if (/[?¿]/.test(operator)) return 'pregunta_del_operador';
+  return looksLikeOrder(customer) ? 'respuesta_al_pedido' : 'reaccion';
+}
+
+function detectInteractions(messages, options = {}) {
+  const operatorNames = new Set(options.operatorNames || []);
+  if (!operatorNames.size) return [];
+
+  const interactions = [];
+  for (let i = 0; i < messages.length; i += 1) {
+    const incoming = messages[i];
+    if (operatorNames.has(incoming.author)) continue;
+    for (let j = i + 1; j < messages.length; j += 1) {
+      const outgoing = messages[j];
+      if (outgoing.author === incoming.author) break;
+      if (operatorNames.has(outgoing.author)) {
+        const incomingMs = incoming.timestamp_ms ?? Date.parse(incoming.timestamp);
+        const outgoingMs = outgoing.timestamp_ms ?? Date.parse(outgoing.timestamp);
+        interactions.push({
+          incoming_message: incoming,
+          response_message: outgoing,
+          category: classifyInteraction(incoming.body, outgoing.body),
+          response_ms: incomingMs != null && outgoingMs != null
+            ? Math.max(0, outgoingMs - incomingMs)
+            : null,
+        });
+        break;
+      }
+    }
+  }
+  return interactions;
+}
+
 function parseChatText(rawText) {
   const lines = rawText.replace(/^\uFEFF/, '').split(/\r?\n/);
   const messages = [];
@@ -313,6 +371,7 @@ function extractChatTitle(filename, text) {
 module.exports = {
   parseChatText,
   detectOrders,
+  detectInteractions,
   extractChatTitle,
   ORDER_KEYWORDS,
 };

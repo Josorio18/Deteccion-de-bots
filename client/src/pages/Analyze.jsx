@@ -25,6 +25,14 @@ const BUCKET_LABELS = {
   very_slow_10m_plus: '>10 min',
 };
 
+const INTERACTION_LABELS = {
+  toma_de_pedido: 'Tomó el pedido',
+  confirmacion_reaccion: 'Confirmación / reacción',
+  pregunta_del_operador: 'Pregunta del operador',
+  respuesta_al_pedido: 'Respuesta al pedido',
+  reaccion: 'Reacción',
+};
+
 export default function Analyze() {
   const [step, setStep] = useState(0);
   const [file, setFile] = useState(null);
@@ -661,6 +669,47 @@ export default function Analyze() {
                 </tbody>
               </table>
             </div>
+          </section>
+
+          <section className="panel table-panel">
+            <div className="section-kicker">6 · Reacciones y toma del pedido</div>
+            <h2>Qué mensaje recibió y cómo respondió el operador</h2>
+            <p className="muted">
+              Cada fila relaciona un mensaje de otra persona con la primera respuesta
+              posterior del operador seleccionado. Por ejemplo, “Bueno señor” se
+              clasifica como confirmación o reacción; no se inventa una cita de WhatsApp.
+            </p>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Mensaje recibido</th>
+                    <th>Respuesta del operador</th>
+                    <th>Tiempo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(result.interactions || []).map((interaction) => (
+                    <tr key={interaction.id}>
+                      <td><strong>{INTERACTION_LABELS[interaction.category] || interaction.category}</strong></td>
+                      <td>
+                        <strong>{interaction.incoming.author}</strong><br />
+                        <span className="message-cell">{interaction.incoming.body || '—'}</span>
+                      </td>
+                      <td>
+                        <strong>{interaction.response.author}</strong><br />
+                        <span className="message-cell">{interaction.response.body || '—'}</span>
+                      </td>
+                      <td>{formatDuration(interaction.response_ms)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!result.interactions?.length && (
+              <p className="muted">No hay interacciones para los operadores seleccionados.</p>
+            )}
           </section>
         </div>
       )}

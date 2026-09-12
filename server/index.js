@@ -6,7 +6,12 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 const JSZip = require('jszip');
 const db = require('./db');
-const { parseChatText, detectOrders, extractChatTitle } = require('./parser');
+const {
+  parseChatText,
+  detectOrders,
+  detectInteractions,
+  extractChatTitle,
+} = require('./parser');
 const { createWhatsAppRouter } = require('./whatsappWebhook');
 const {
   computeImportStats,
@@ -229,6 +234,7 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
     const chatTitle = extractChatTitle(filename, text);
     const messages = parseChatText(text);
     const detected = detectOrders(messages, { operatorNames });
+    const interactions = detectInteractions(messages, { operatorNames });
 
     const importId = randomUUID();
     const qualityStore = JSON.stringify({
@@ -344,6 +350,21 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
         timestamp: message.timestamp,
         timestamp_ms: message.timestamp_ms,
         has_ms: message.has_ms,
+      })),
+      interactions: interactions.map((interaction, index) => ({
+        id: index + 1,
+        category: interaction.category,
+        response_ms: interaction.response_ms,
+        incoming: {
+          author: interaction.incoming_message.author,
+          body: interaction.incoming_message.body,
+          timestamp: interaction.incoming_message.timestamp,
+        },
+        response: {
+          author: interaction.response_message.author,
+          body: interaction.response_message.body,
+          timestamp: interaction.response_message.timestamp,
+        },
       })),
       orders: savedOrders,
       signal: {
