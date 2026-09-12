@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test:parser": "node test-parser.js"
+    "test:parser": "node test-parser.js",
+    "cmd": "node cmd-detector.js"
   },
   "keywords": [],
   "author": "",
