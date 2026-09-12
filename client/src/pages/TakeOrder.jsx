@@ -4,6 +4,7 @@ import {
   createOperator,
   getOperators,
   getOrders,
+  markOrderResponded,
   takeOrder,
 } from '../api';
 import {
@@ -61,7 +62,26 @@ export default function TakeOrder() {
       const net = captureNetworkSignal();
       setSignal(net);
       await takeOrder(orderId, { operator_id: operatorId, ...net });
-      setMessage('Pedido tomado y señal registrada');
+      setMessage('Pedido tomado. Responde en WhatsApp y luego pulsa “Respuesta enviada”.');
+      await refresh();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onRespond(orderId) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const now = new Date().toISOString();
+      await markOrderResponded(orderId, {
+        responded_at: now,
+        responder_name: operators.find((op) => op.id === operatorId)?.name || 'Operador',
+      });
+      setMessage('Respuesta registrada con milisegundos exactos del navegador.');
       await refresh();
     } catch (e) {
       setError(e.message);
@@ -185,7 +205,11 @@ export default function TakeOrder() {
       {message && <p className="ok">{message}</p>}
 
       <section className="panel">
-        <h2>Pendientes (sin respuesta / sin señal)</h2>
+        <h2>Pedidos Lite</h2>
+        <p className="muted">
+          Pulsa <strong>Tomar pedido</strong>, responde en WhatsApp Business y después pulsa
+          <strong> Respuesta enviada</strong>. Así se separan espera, atención y total.
+        </p>
         <ul className="order-actions">
           {pending.map((o) => (
             <li key={o.id}>
@@ -193,18 +217,37 @@ export default function TakeOrder() {
                 <strong>{o.customer_name}</strong>
                 <span className="muted"> · {formatDateTime(o.order_at)}</span>
                 <p className="truncate">{o.customer_message}</p>
-                {o.response_seconds != null && (
-                    <small>SLA chat: {formatDuration(o.response_seconds, 's')}</small>
+                {o.taken_at_ms != null && o.status !== 'answered' && (
+                  <small className="ok">Tomado · espera: {formatDuration(o.wait_ms || 0)}</small>
+                )}
+                {o.status === 'answered' && (
+                  <small>
+                    Total: {formatDuration(o.response_ms)} · espera: {formatDuration(o.wait_ms || 0)}
+                    {' · '}atención: {formatDuration(o.handling_ms || 0)}
+                  </small>
                 )}
               </div>
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={() => onTake(o.id)}
-              >
-                Tomar + señal
-              </button>
+              {o.status === 'answered' ? (
+                <span className="ok">Respondido</span>
+              ) : o.taken_at_ms != null ? (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy}
+                  onClick={() => onRespond(o.id)}
+                >
+                  Respuesta enviada
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy}
+                  onClick={() => onTake(o.id)}
+                >
+                  Tomar pedido
+                </button>
+              )}
             </li>
           ))}
           {!pending.length && (

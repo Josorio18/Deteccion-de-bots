@@ -628,22 +628,10 @@ app.post('/api/orders/:id/take', (req, res) => {
   if (!capturedAt) {
     return res.status(400).json({ error: 'signal_captured_at no es una fecha válida.' });
   }
-  let responseSeconds = order.response_seconds;
-  let responseMs = order.response_ms;
-  let respondedAt = order.responded_at;
-  let status = order.status;
-  let timingPrecision = order.timing_precision || 's';
-
-  if (!respondedAt) {
-    respondedAt = capturedAt;
-    responseMs = Math.max(
-      0,
-      new Date(capturedAt).getTime() - new Date(order.order_at).getTime()
-    );
-    responseSeconds = responseMs / 1000;
-    timingPrecision = 'ms';
-    status = 'answered';
-  }
+  const capturedAtMs = new Date(capturedAt).getTime();
+  const orderAtMs = new Date(order.order_at).getTime();
+  const takenAtMs = order.taken_at_ms || capturedAtMs;
+  const waitMs = Math.max(0, takenAtMs - orderAtMs);
 
   db.prepare(`
     UPDATE orders SET
@@ -655,11 +643,10 @@ app.post('/api/orders/:id/take', (req, res) => {
       save_data = ?,
       signal_captured_at = ?,
       responder_name = COALESCE(responder_name, ?),
-      responded_at = ?,
-      response_seconds = ?,
-      response_ms = ?,
-      timing_precision = ?,
-      status = ?
+      taken_at = COALESCE(taken_at, ?),
+      taken_at_ms = COALESCE(taken_at_ms, ?),
+      wait_ms = COALESCE(wait_ms, ?),
+      status = CASE WHEN status = 'answered' THEN status ELSE 'pending' END
     WHERE id = ?
   `).run(
     operator_id,
@@ -670,11 +657,9 @@ app.post('/api/orders/:id/take', (req, res) => {
     save_data ? 1 : 0,
     capturedAt,
     op.name,
-    respondedAt,
-    responseSeconds,
-    responseMs,
-    timingPrecision,
-    status,
+    capturedAt,
+    capturedAtMs,
+    waitMs,
     req.params.id
   );
 
@@ -686,6 +671,34 @@ app.post('/api/orders/:id/take', (req, res) => {
     )
     .get(req.params.id);
 
+  res.json(rowToOrder(updated));
+});
+
+/** Marca manualmente la respuesta enviada desde WhatsApp Business Lite. */
+app.post('/api/orders/:id/respond', (req, res) => {
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });
+  if (order.status === 'answered' && order.response_marked_at_ms) {
+    return res.status(409).json({ error: 'Este pedido ya fue marcado como respondido' });
+  }
+  const at = validIsoDate(req.body.responded_at) || new Date().toISOString();
+  const responseAtMs = new Date(at).getTime();
+  const orderAtMs = new Date(order.order_at).getTime();
+  const takenAtMs = order.taken_at_ms || responseAtMs;
+  const waitMs = Math.max(0, takenAtMs - orderAtMs);
+  const totalMs = Math.max(0, responseAtMs - orderAtMs);
+  const handlingMs = Math.max(0, responseAtMs - takenAtMs);
+  db.prepare(`UPDATE orders SET
+    responder_name = COALESCE(responder_name, ?),
+    taken_at = COALESCE(taken_at, ?), taken_at_ms = COALESCE(taken_at_ms, ?),
+    wait_ms = COALESCE(wait_ms, ?), responded_at = ?, response_seconds = ?, response_ms = ?,
+    response_marked_at = ?, response_marked_at_ms = ?, handling_ms = ?, timing_precision = 'ms', status = 'answered'
+    WHERE id = ?`).run(
+    req.body.responder_name || 'Operador', new Date(takenAtMs).toISOString(), takenAtMs,
+    waitMs, at, totalMs / 1000, totalMs, at, responseAtMs, handlingMs, req.params.id
+  );
+  const updated = db.prepare(`SELECT o.*, op.name AS operator_name FROM orders o
+    LEFT JOIN operators op ON op.id = o.operator_id WHERE o.id = ?`).get(req.params.id);
   res.json(rowToOrder(updated));
 });
 

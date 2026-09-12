@@ -49,6 +49,12 @@ db.exec(`
     response_ack_at TEXT,
     response_ack_at_ms INTEGER,
     observed_response_ms INTEGER,
+    taken_at TEXT,
+    taken_at_ms INTEGER,
+    response_marked_at TEXT,
+    response_marked_at_ms INTEGER,
+    wait_ms INTEGER,
+    handling_ms INTEGER,
     operator_id TEXT,
     network_type TEXT,
     effective_type TEXT,
@@ -126,6 +132,36 @@ try {
 }
 try {
   db.exec('ALTER TABLE orders ADD COLUMN observed_response_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN taken_at TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN taken_at_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN response_marked_at TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN response_marked_at_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN wait_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN handling_ms INTEGER');
 } catch {
   /* already exists */
 }

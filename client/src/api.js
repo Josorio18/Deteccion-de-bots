@@ -93,6 +93,14 @@ export function takeOrder(orderId, payload) {
   });
 }
 
+export function markOrderResponded(orderId, payload = {}) {
+  return request(`/orders/${orderId}/respond`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
 export function createManualOrder(payload) {
   return request('/orders/manual', {
     method: 'POST',
