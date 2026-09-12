@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const JSZip = require('jszip');
 const { parseChatText, detectOrders, detectInteractions } = require('./parser');
 
 const RESET = '\x1b[0m';
@@ -73,11 +74,19 @@ function printInteraction(interaction, index) {
   console.log(`  Acumulado:   ${fmtMs(interaction.elapsed_from_start_ms)}`);
 }
 async function main() {
-  const file = process.argv[2] || await prompt('Ruta del chat exportado (.txt): ');
-  if (!file) throw new Error('Debes indicar un archivo .txt de WhatsApp.');
+  const file = process.argv[2] || await prompt('Ruta del chat exportado (.txt o .zip): ');
+  if (!file) throw new Error('Debes indicar un archivo .txt o .zip de WhatsApp.');
   const filePath = path.resolve(file.replace(/^"|"$/g, ''));
   if (!fs.existsSync(filePath)) throw new Error(`No existe el archivo: ${filePath}`);
-  const text = fs.readFileSync(filePath, 'utf8');
+  let text;
+  if (filePath.toLowerCase().endsWith('.zip')) {
+    const zip = await JSZip.loadAsync(fs.readFileSync(filePath));
+    const entry = Object.values(zip.files).find((item) => item.name.toLowerCase().endsWith('.txt') && !item.dir);
+    if (!entry) throw new Error('El ZIP no contiene un archivo .txt de chat.');
+    text = await entry.async('string');
+  } else {
+    text = fs.readFileSync(filePath, 'utf8');
+  }
   const operatorArg = process.argv.slice(3).join(' ') || await prompt('Nombre(s) del operador, separados por coma (Enter = detectar): ');
   const operatorNames = operatorArg.split(',').map((name) => name.trim()).filter(Boolean);
   const messages = parseChatText(text);
