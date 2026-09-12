@@ -27,6 +27,10 @@ function fmtMs(ms) {
   const millis = value % 1000;
   return `${minutes}m ${String(seconds).padStart(2, '0')}s ${String(millis).padStart(3, '0')} ms (${value.toLocaleString('en-US')} ms)`;
 }
+function fmtSeconds(ms) {
+  if (ms == null || !Number.isFinite(Number(ms))) return '—';
+  return `${(Number(ms) / 1000).toFixed(6)} s`;
+}
 function precisionLabel(precision) {
   if (precision === 'ms') return 'exactitud de milisegundos';
   if (precision === 'minute') return 'rango: precisión de minuto';
@@ -41,16 +45,20 @@ function printOrder(order, index) {
   console.log(color(CYAN, `\n${line('═')}\nPEDIDO #${index + 1}\n${line('═')}`));
   console.log(`Cliente:       ${order.customer_name}`);
   console.log(`Pedido:        ${order.customer_message || '—'}`);
-  console.log(`Hora pedido:   ${order.order_at} (${order.order_at_ms ?? 'sin timestamp'})`);
+  console.log(`Hora pedido:   ${order.order_at}`);
+  console.log(`Timestamp ini: ${order.order_at_ms ?? 'sin timestamp'} ms`);
   console.log(`Atendido por:  ${order.responder_name || 'SIN RESPUESTA'}`);
-  console.log(`Hora respuesta:${order.responded_at ? ` ${order.responded_at} (${order.responded_at_ms})` : ' —'}`);
+  console.log(`Hora respuesta:${order.responded_at ? ` ${order.responded_at}` : ' —'}`);
   if (!answered) {
     console.log(color(YELLOW, 'Estado:        PENDIENTE — todavía no existe una respuesta del operador'));
     return;
   }
-  const nominal = `${fmtMs(order.response_ms)} = ${order.response_seconds}s`;
+  console.log(`Timestamp fin:  ${order.responded_at_ms} ms`);
+  console.log(`Resta exacta:   ${order.responded_at_ms} - ${order.order_at_ms} = ${order.response_ms} ms`);
+  const nominal = `${fmtMs(order.response_ms)} = ${fmtSeconds(order.response_ms)}`;
   if (order.timing_precision === 'minute' && order.response_min_ms != null) {
-    console.log(`Tiempo real:   ${fmtMs(order.response_min_ms)} a ${fmtMs(order.response_max_ms)}`);
+    console.log(`Tiempo real:   ${fmtSeconds(order.response_min_ms)} a ${fmtSeconds(order.response_max_ms)}`);
+    console.log(`                (${fmtMs(order.response_min_ms)} a ${fmtMs(order.response_max_ms)})`);
     console.log(`                Tiempo nominal: ${nominal}`);
   } else {
     console.log(`Tiempo toma:   ${nominal}`);
