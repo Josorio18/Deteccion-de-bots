@@ -107,6 +107,7 @@ function parseDateTime(dateStr, timeStr) {
   hours = tp[0];
   minutes = tp[1] || 0;
   seconds = tp[2] || 0;
+  const timePrecision = hasMs ? 'ms' : tp.length >= 3 ? 's' : 'minute';
 
   if (hasAmPm) {
     if (isPM && hours < 12) hours += 12;
@@ -115,7 +116,12 @@ function parseDateTime(dateStr, timeStr) {
 
   const d = new Date(year, month - 1, day, hours, minutes, seconds, ms);
   if (Number.isNaN(d.getTime())) return null;
-  return { iso: d.toISOString(), ms: d.getTime(), hasMs };
+  return {
+    iso: d.toISOString(),
+    ms: d.getTime(),
+    hasMs,
+    timePrecision,
+  };
 }
 
 function isSystemMessage(text, author) {
@@ -160,6 +166,12 @@ function classifyInteraction(customerText, operatorText) {
   return looksLikeOrder(customer) ? 'respuesta_al_pedido' : 'reaccion';
 }
 
+function precisionUnitMs(message) {
+  if (message?.time_precision === 'ms') return 1;
+  if (message?.time_precision === 's') return 1000;
+  return 60000;
+}
+
 function detectInteractions(messages, options = {}) {
   const operatorNames = new Set(options.operatorNames || []);
   if (!operatorNames.size) return [];
@@ -177,12 +189,21 @@ function detectInteractions(messages, options = {}) {
         const outgoingMs = outgoing.timestamp_ms ?? Date.parse(outgoing.timestamp);
         const previousMs = previous?.timestamp_ms ?? (previous ? Date.parse(previous.timestamp) : null);
         const firstMs = messages[0]?.timestamp_ms ?? (messages[0] ? Date.parse(messages[0].timestamp) : null);
+        const responseNominalMs = incomingMs != null && outgoingMs != null
+          ? Math.max(0, outgoingMs - incomingMs)
+          : null;
+        const incomingUnitMs = precisionUnitMs(incoming);
+        const outgoingUnitMs = precisionUnitMs(outgoing);
         interactions.push({
           incoming_message: incoming,
           response_message: outgoing,
           category: classifyInteraction(incoming.body, outgoing.body),
-          response_ms: incomingMs != null && outgoingMs != null
-            ? Math.max(0, outgoingMs - incomingMs)
+          response_ms: responseNominalMs,
+          response_min_ms: responseNominalMs != null
+            ? Math.max(0, responseNominalMs - incomingUnitMs)
+            : null,
+          response_max_ms: responseNominalMs != null
+            ? responseNominalMs + outgoingUnitMs
             : null,
           since_previous_ms: previousMs != null && incomingMs != null
             ? Math.max(0, incomingMs - previousMs)
@@ -190,7 +211,11 @@ function detectInteractions(messages, options = {}) {
           elapsed_from_start_ms: firstMs != null && outgoingMs != null
             ? Math.max(0, outgoingMs - firstMs)
             : null,
-          timing_precision: incoming.has_ms || outgoing.has_ms ? 'ms' : 's',
+          timing_precision: incoming.time_precision === 'minute' || outgoing.time_precision === 'minute'
+            ? 'minute'
+            : incoming.time_precision === 's' || outgoing.time_precision === 's'
+              ? 's'
+              : 'ms',
           same_minute: incoming.rawDate === outgoing.rawDate && incoming.rawTime === outgoing.rawTime,
         });
         break;
@@ -216,6 +241,7 @@ function parseChatText(rawText) {
           timestamp: parsed ? parsed.iso : null,
           timestamp_ms: parsed ? parsed.ms : null,
           has_ms: parsed ? parsed.hasMs : false,
+          time_precision: parsed ? parsed.timePrecision : 'unknown',
           rawDate: m[1],
           rawTime: m[2],
           author: m[3].trim(),

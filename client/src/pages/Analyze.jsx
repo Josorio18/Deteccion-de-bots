@@ -709,11 +709,17 @@ export default function Analyze() {
                         <span className="message-cell">{interaction.response.body || '—'}</span>
                       </td>
                       <td>
-                        <strong>{formatDuration(interaction.response_ms)}</strong><br />
+                        <strong>
+                          {interaction.timing_precision === 'minute'
+                            ? `${formatDuration(interaction.response_min_ms)} – ${formatDuration(interaction.response_max_ms)}`
+                            : formatDuration(interaction.response_ms)}
+                        </strong><br />
                         <small>
-                          {interaction.timing_precision === 'ms'
-                            ? 'Precisión: milisegundos'
-                            : 'Precisión: segundos'}
+                          {interaction.timing_precision === 'minute'
+                            ? 'Rango posible: WhatsApp solo exportó minutos'
+                            : interaction.timing_precision === 'ms'
+                              ? 'Precisión: milisegundos'
+                              : 'Precisión: segundos (±1 s)'}
                         </small>
                       </td>
                       <td>
