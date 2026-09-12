@@ -230,14 +230,6 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
     const messages = parseChatText(text);
     const detected = detectOrders(messages, { operatorNames });
 
-    if (!detected.orders.length) {
-      fs.unlink(req.file.path, () => {});
-      return res.status(400).json({
-        error:
-          'No se detectaron pedidos. Revisa que los nombres de operadores sean exactos (como aparecen en el chat).',
-      });
-    }
-
     const importId = randomUUID();
     const qualityStore = JSON.stringify({
       note: signal_quality,
@@ -344,6 +336,15 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
       order_count: detected.orders.length,
       operators: detected.operators,
       authors: detected.authors,
+      // La exportación se analiza completa; los pedidos son solo una vista derivada.
+      messages: messages.map((message, index) => ({
+        id: index + 1,
+        author: message.author,
+        body: message.body,
+        timestamp: message.timestamp,
+        timestamp_ms: message.timestamp_ms,
+        has_ms: message.has_ms,
+      })),
       orders: savedOrders,
       signal: {
         ...report.signal,

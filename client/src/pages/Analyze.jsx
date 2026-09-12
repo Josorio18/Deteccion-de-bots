@@ -369,7 +369,7 @@ export default function Analyze() {
                 <div className="section-kicker">Informe</div>
                 <h2>{result.chat_title}</h2>
                 <p className="muted">
-                  {result.order_count} pedidos · {result.message_count} mensajes ·
+                  {result.order_count} pedidos detectados · {result.message_count} mensajes analizados ·
                   operadores: {(result.operators || []).join(', ')}
                 </p>
               </div>
@@ -570,8 +570,8 @@ export default function Analyze() {
           </section>
 
           <section className="panel table-panel">
-            <div className="section-kicker">4 · Detalle por pedido</div>
-            <h2>Detallado de Pedidos (Quién envió, quién tomó y tiempo de respuesta)</h2>
+            <div className="section-kicker">4 · Pedidos detectados</div>
+            <h2>Detalle de pedidos (vista derivada del chat)</h2>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -619,6 +619,43 @@ export default function Analyze() {
                           '—'}
                         {o.downlink != null ? ` · ${o.downlink} Mbps` : ''}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!result.orders?.length && (
+              <p className="muted">
+                No se detectaron pedidos con los criterios actuales. El chat completo
+                aparece en la transcripción de abajo y no se descartó ningún mensaje.
+              </p>
+            )}
+          </section>
+
+          <section className="panel table-panel">
+            <div className="section-kicker">5 · Transcripción completa</div>
+            <h2>Todos los mensajes del chat</h2>
+            <p className="muted">
+              Se muestran todos los mensajes detectados, incluidos mensajes cortos,
+              adjuntos y mensajes de sistema excluidos de los cálculos de respuesta.
+            </p>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Hora</th>
+                    <th>Remitente</th>
+                    <th>Mensaje / adjunto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(result.messages || []).map((message) => (
+                    <tr key={message.id}>
+                      <td>{message.id}</td>
+                      <td>{formatDateTime(message.timestamp)}</td>
+                      <td><strong>{message.author}</strong></td>
+                      <td className="message-cell">{message.body || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
