@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   createManualOrder,
   createOperator,
@@ -29,7 +29,7 @@ export default function TakeOrder() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const [ops, orders] = await Promise.all([
       getOperators(),
       getOrders({ status: 'pending' }),
@@ -37,13 +37,13 @@ export default function TakeOrder() {
     setOperators(ops);
     setPending(orders);
     if (!operatorId && ops[0]) setOperatorId(ops[0].id);
-  }
+  }, [operatorId]);
 
   useEffect(() => {
     refresh().catch((e) => setError(e.message));
     const id = setInterval(() => setSignal(captureNetworkSignal()), 4000);
     return () => clearInterval(id);
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     if (operatorId) localStorage.setItem('rt_operator_id', operatorId);

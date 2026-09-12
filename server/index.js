@@ -38,6 +38,18 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
+function optionalFiniteNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function validIsoDate(value, fallback = new Date().toISOString()) {
+  if (!value) return fallback;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : value;
+}
+
 function rowToOrder(row) {
   if (!row) return null;
   return {
@@ -175,27 +187,21 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
     const registrarName = (req.body.registrarName || '').trim();
     const network_type = req.body.network_type || null;
     const effective_type = req.body.effective_type || null;
-    const downlink =
-      req.body.downlink !== undefined && req.body.downlink !== ''
-        ? Number(req.body.downlink)
-        : null;
-    const rtt =
-      req.body.rtt !== undefined && req.body.rtt !== ''
-        ? Number(req.body.rtt)
-        : null;
+    const downlink = optionalFiniteNumber(req.body.downlink);
+    const rtt = optionalFiniteNumber(req.body.rtt);
     const save_data =
       req.body.save_data === '1' ||
       req.body.save_data === 'true' ||
       req.body.save_data === true;
     const signal_quality = (req.body.signal_quality || '').trim() || null;
     const signal_channel = (req.body.signal_channel || 'auto').trim();
-    const signal_bars =
-      req.body.signal_bars !== undefined && req.body.signal_bars !== ''
-        ? Number(req.body.signal_bars)
-        : null;
+    const signal_bars = optionalFiniteNumber(req.body.signal_bars);
     const signal_environment = (req.body.signal_environment || '').trim() || null;
-    const signal_captured_at =
-      req.body.signal_captured_at || new Date().toISOString();
+    const signal_captured_at = validIsoDate(req.body.signal_captured_at);
+    if (!signal_captured_at) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: 'signal_captured_at no es una fecha válida.' });
+    }
 
     if (!operatorNames.length) {
       fs.unlink(req.file.path, () => {});
@@ -618,7 +624,10 @@ app.post('/api/orders/:id/take', (req, res) => {
   const op = db.prepare('SELECT * FROM operators WHERE id = ?').get(operator_id);
   if (!op) return res.status(400).json({ error: 'Operador no válido' });
 
-  const capturedAt = signal_captured_at || new Date().toISOString();
+  const capturedAt = validIsoDate(signal_captured_at);
+  if (!capturedAt) {
+    return res.status(400).json({ error: 'signal_captured_at no es una fecha válida.' });
+  }
   let responseSeconds = order.response_seconds;
   let responseMs = order.response_ms;
   let respondedAt = order.responded_at;
