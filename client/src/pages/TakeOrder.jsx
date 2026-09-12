@@ -194,7 +194,7 @@ export default function TakeOrder() {
                 <span className="muted"> · {formatDateTime(o.order_at)}</span>
                 <p className="truncate">{o.customer_message}</p>
                 {o.response_seconds != null && (
-                  <small>SLA chat: {formatDuration(o.response_seconds)}</small>
+                    <small>SLA chat: {formatDuration(o.response_seconds, 's')}</small>
                 )}
               </div>
               <button

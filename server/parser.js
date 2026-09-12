@@ -351,13 +351,21 @@ function detectOrders(messages, options = {}) {
           : null;
         let responseMs = null;
         let responseSeconds = null;
+        let responseMinMs = null;
+        let responseMaxMs = null;
         if (respondedAtMs != null && orderAtMs != null) {
           responseMs = Math.max(0, respondedAtMs - orderAtMs);
           responseSeconds = responseMs / 1000;
+          const incomingUnitMs = precisionUnitMs(msg);
+          const responseUnitMs = precisionUnitMs(response);
+          responseMinMs = Math.max(0, responseMs - incomingUnitMs);
+          responseMaxMs = responseMs + responseUnitMs;
         }
 
         const timingPrecision =
-          (msg.has_ms || (response && response.has_ms)) ? 'ms' : 's';
+          msg.time_precision === 'minute' || response?.time_precision === 'minute'
+            ? 'minute'
+            : (msg.has_ms || (response && response.has_ms)) ? 'ms' : 's';
 
         orders.push({
           customer_name: msg.author,
@@ -370,6 +378,8 @@ function detectOrders(messages, options = {}) {
           responded_at_ms: respondedAtMs,
           response_ms: responseMs,
           response_seconds: responseSeconds,
+          response_min_ms: responseMinMs,
+          response_max_ms: responseMaxMs,
           timing_precision: timingPrecision,
           status: response ? 'answered' : 'pending',
         });

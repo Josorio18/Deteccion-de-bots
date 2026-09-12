@@ -113,13 +113,13 @@ export default function Dashboard() {
           <div className="stat accent">
             <span className="stat-label">Promedio respuesta</span>
             <strong className="stat-value">
-              {formatDuration(summary.avg_response_seconds)}
+              {formatDuration(summary.avg_response_seconds, 's')}
             </strong>
           </div>
           <div className="stat">
             <span className="stat-label">Máximo</span>
             <strong className="stat-value">
-              {formatDuration(summary.max_response_seconds)}
+              {formatDuration(summary.max_response_seconds, 's')}
             </strong>
           </div>
         </section>
@@ -133,7 +133,7 @@ export default function Dashboard() {
               <li key={row.network}>
                 <span>{row.network}</span>
                 <span>
-                  {row.count} · avg {formatDuration(row.avg_response_seconds)}
+                  {row.count} · avg {formatDuration(row.avg_response_seconds, 's')}
                 </span>
               </li>
             ))}
@@ -149,7 +149,7 @@ export default function Dashboard() {
               <li key={row.operator}>
                 <span>{row.operator}</span>
                 <span>
-                  {row.count} · avg {formatDuration(row.avg_response_seconds)}
+                  {row.count} · avg {formatDuration(row.avg_response_seconds, 's')}
                 </span>
               </li>
             ))}

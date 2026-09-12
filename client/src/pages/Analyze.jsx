@@ -399,20 +399,20 @@ export default function Analyze() {
               <div className="stat accent">
                 <span className="stat-label">Promedio</span>
                 <strong className="stat-value">
-                  {formatDuration(stats?.avg_response_seconds)}
+                  {formatDuration(stats?.avg_response_seconds, 's')}
                 </strong>
               </div>
               <div className="stat">
                 <span className="stat-label">Mediana</span>
                 <strong className="stat-value">
-                  {formatDuration(stats?.median_response_seconds)}
+                  {formatDuration(stats?.median_response_seconds, 's')}
                 </strong>
               </div>
               <div className="stat">
                 <span className="stat-label">Mín / Máx</span>
                 <strong className="stat-value">
-                  {formatDuration(stats?.min_response_seconds)} /{' '}
-                  {formatDuration(stats?.max_response_seconds)}
+                  {formatDuration(stats?.min_response_seconds, 's')} /{' '}
+                  {formatDuration(stats?.max_response_seconds, 's')}
                 </strong>
               </div>
               <div className="stat">
@@ -613,13 +613,24 @@ export default function Analyze() {
                               : ''
                           }
                         >
-                          {formatDuration(
-                            o.response_ms ??
-                              (o.response_seconds != null
-                                ? o.response_seconds * 1000
-                                : null)
-                          )}
+                          {o.timing_precision === 'minute' && o.response_ms != null
+                            ? `${formatDuration(o.response_min_ms)} – ${formatDuration(o.response_max_ms)}`
+                            : formatDuration(
+                                o.response_ms ??
+                                  (o.response_seconds != null
+                                    ? o.response_seconds * 1000
+                                    : null)
+                              )}
                         </strong>
+                        {o.timing_precision && (
+                          <small className="muted">
+                            {o.timing_precision === 'ms'
+                              ? 'Exactitud: milisegundos'
+                              : o.timing_precision === 'minute'
+                                ? 'Rango estimado: precisión de minuto'
+                                : 'Exactitud: segundos'}
+                          </small>
+                        )}
                       </td>
                       <td>
                         {sig?.signal_channel_label ||
