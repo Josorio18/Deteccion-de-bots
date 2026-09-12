@@ -23,7 +23,12 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({
+  limit: '2mb',
+  verify: (req, _res, buffer) => {
+    if (req.originalUrl.startsWith('/api/whatsapp/webhook')) req.rawBody = Buffer.from(buffer);
+  },
+}));
 
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });

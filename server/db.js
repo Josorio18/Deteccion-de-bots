@@ -33,6 +33,7 @@ db.exec(`
     import_id TEXT,
     source TEXT NOT NULL DEFAULT 'export',
     customer_name TEXT,
+    customer_phone TEXT,
     customer_message TEXT,
     order_at TEXT NOT NULL,
     responder_name TEXT,
@@ -41,6 +42,8 @@ db.exec(`
     response_seconds REAL,
     response_ms INTEGER,
     timing_precision TEXT DEFAULT 's',
+    inbound_wa_message_id TEXT,
+    response_wa_message_id TEXT,
     operator_id TEXT,
     network_type TEXT,
     effective_type TEXT,
@@ -80,6 +83,34 @@ try {
 } catch {
   /* already exists */
 }
+
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN customer_phone TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN inbound_wa_message_id TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN response_wa_message_id TEXT');
+} catch {
+  /* already exists */
+}
+
+db.exec(`
+  DELETE FROM wa_events
+  WHERE wa_message_id IS NOT NULL
+    AND rowid NOT IN (
+      SELECT MIN(rowid) FROM wa_events
+      WHERE wa_message_id IS NOT NULL
+      GROUP BY wa_message_id, direction
+    );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_events_message_direction
+    ON wa_events(wa_message_id, direction) WHERE wa_message_id IS NOT NULL;
+`);
 
 const defaultOps = ['Operador 1', 'Operador 2', 'Operador 3'];
 const insertOp = db.prepare(
