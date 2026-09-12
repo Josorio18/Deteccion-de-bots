@@ -673,35 +673,58 @@ export default function Analyze() {
 
           <section className="panel table-panel">
             <div className="section-kicker">6 · Reacciones y toma del pedido</div>
-            <h2>Qué mensaje recibió y cómo respondió el operador</h2>
+            <h2>Línea de tiempo detallada de cada interacción</h2>
             <p className="muted">
               Cada fila relaciona un mensaje de otra persona con la primera respuesta
               posterior del operador seleccionado. Por ejemplo, “Bueno señor” se
               clasifica como confirmación o reacción; no se inventa una cita de WhatsApp.
+              El tiempo se calcula con los datos que realmente trae la exportación.
             </p>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Tipo</th>
-                    <th>Mensaje recibido</th>
-                    <th>Respuesta del operador</th>
-                    <th>Tiempo</th>
+                    <th># / tipo</th>
+                    <th>Mensaje recibido (hora exacta)</th>
+                    <th>Respuesta del operador (hora exacta)</th>
+                    <th>Tiempo de respuesta</th>
+                    <th>Detalle de intervalos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(result.interactions || []).map((interaction) => (
                     <tr key={interaction.id}>
-                      <td><strong>{INTERACTION_LABELS[interaction.category] || interaction.category}</strong></td>
+                      <td>
+                        <strong>#{interaction.id}</strong><br />
+                        {INTERACTION_LABELS[interaction.category] || interaction.category}
+                      </td>
                       <td>
                         <strong>{interaction.incoming.author}</strong><br />
+                        <small>{formatDateTime(interaction.incoming.timestamp)}</small><br />
                         <span className="message-cell">{interaction.incoming.body || '—'}</span>
                       </td>
                       <td>
                         <strong>{interaction.response.author}</strong><br />
+                        <small>{formatDateTime(interaction.response.timestamp)}</small><br />
                         <span className="message-cell">{interaction.response.body || '—'}</span>
                       </td>
-                      <td>{formatDuration(interaction.response_ms)}</td>
+                      <td>
+                        <strong>{formatDuration(interaction.response_ms)}</strong><br />
+                        <small>
+                          {interaction.timing_precision === 'ms'
+                            ? 'Precisión: milisegundos'
+                            : 'Precisión: segundos'}
+                        </small>
+                      </td>
+                      <td>
+                        <small>
+                          Desde mensaje anterior: {formatDuration(interaction.since_previous_ms)}<br />
+                          Acumulado desde inicio: {formatDuration(interaction.elapsed_from_start_ms)}<br />
+                          {interaction.same_minute
+                            ? 'Mismo minuto exportado; no se puede saber el orden dentro del minuto.'
+                            : 'Minutos distintos en la exportación.'}
+                        </small>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

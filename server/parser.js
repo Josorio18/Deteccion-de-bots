@@ -168,12 +168,15 @@ function detectInteractions(messages, options = {}) {
   for (let i = 0; i < messages.length; i += 1) {
     const incoming = messages[i];
     if (operatorNames.has(incoming.author)) continue;
+    const previous = i > 0 ? messages[i - 1] : null;
     for (let j = i + 1; j < messages.length; j += 1) {
       const outgoing = messages[j];
       if (outgoing.author === incoming.author) break;
       if (operatorNames.has(outgoing.author)) {
         const incomingMs = incoming.timestamp_ms ?? Date.parse(incoming.timestamp);
         const outgoingMs = outgoing.timestamp_ms ?? Date.parse(outgoing.timestamp);
+        const previousMs = previous?.timestamp_ms ?? (previous ? Date.parse(previous.timestamp) : null);
+        const firstMs = messages[0]?.timestamp_ms ?? (messages[0] ? Date.parse(messages[0].timestamp) : null);
         interactions.push({
           incoming_message: incoming,
           response_message: outgoing,
@@ -181,6 +184,14 @@ function detectInteractions(messages, options = {}) {
           response_ms: incomingMs != null && outgoingMs != null
             ? Math.max(0, outgoingMs - incomingMs)
             : null,
+          since_previous_ms: previousMs != null && incomingMs != null
+            ? Math.max(0, incomingMs - previousMs)
+            : null,
+          elapsed_from_start_ms: firstMs != null && outgoingMs != null
+            ? Math.max(0, outgoingMs - firstMs)
+            : null,
+          timing_precision: incoming.has_ms || outgoing.has_ms ? 'ms' : 's',
+          same_minute: incoming.rawDate === outgoing.rawDate && incoming.rawTime === outgoing.rawTime,
         });
         break;
       }

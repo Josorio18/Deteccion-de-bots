@@ -355,6 +355,10 @@ app.post('/api/imports', upload.single('file'), async (req, res) => {
         id: index + 1,
         category: interaction.category,
         response_ms: interaction.response_ms,
+        since_previous_ms: interaction.since_previous_ms,
+        elapsed_from_start_ms: interaction.elapsed_from_start_ms,
+        timing_precision: interaction.timing_precision,
+        same_minute: interaction.same_minute,
         incoming: {
           author: interaction.incoming_message.author,
           body: interaction.incoming_message.body,
