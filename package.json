@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "npm --prefix server start",
-    "build": "npm --prefix client run build",
+    "build": "npm --prefix client install && npm --prefix client run build",
     "predeploy": "npm run build",
     "deploy": "npm run build && wrangler deploy",
     "build:client": "npm --prefix client run build",
