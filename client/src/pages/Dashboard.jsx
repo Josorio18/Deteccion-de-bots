@@ -195,8 +195,13 @@ export default function Dashboard() {
                           (o.response_seconds != null
                             ? o.response_seconds * 1000
                             : null)
-                      )}
+                          )}
                     </strong>
+                    {o.observed_response_ms != null && (
+                      <small className="muted">
+                        <br />API observado: {formatDuration(o.observed_response_ms)}
+                      </small>
+                    )}
                   </td>
                   <td>
                     {o.effective_type || o.network_type || '—'}

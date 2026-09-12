@@ -97,6 +97,8 @@ function createWhatsAppRouter(db) {
 
 function handleInbound(db, msg, value) {
   if (!msg.id) return;
+  const webhookReceivedAt = new Date().toISOString();
+  const webhookReceivedAtMs = Date.now();
   const exists = db.prepare('SELECT id FROM wa_events WHERE wa_message_id = ? AND direction = ?').get(msg.id, 'inbound');
   if (exists) return;
   const from = msg.from || null;
@@ -113,9 +115,9 @@ function handleInbound(db, msg, value) {
   let pending = db.prepare(`SELECT * FROM orders WHERE source = 'whatsapp_api' AND customer_phone = ? AND status = 'pending' ORDER BY order_at DESC LIMIT 1`).get(from);
   if (!pending) {
     const orderId = randomUUID();
-    db.prepare(`INSERT INTO orders (id, source, customer_name, customer_phone, customer_message, order_at, status, chat_title, inbound_wa_message_id, timing_precision)
-      VALUES (?, 'whatsapp_api', ?, ?, ?, ?, 'pending', ?, ?, 's')`).run(
-      orderId, name, from, body.slice(0, 500), timestamp, from || 'WhatsApp API', msg.id
+    db.prepare(`INSERT INTO orders (id, source, customer_name, customer_phone, customer_message, order_at, status, chat_title, inbound_wa_message_id, timing_precision, webhook_received_at, webhook_received_at_ms)
+      VALUES (?, 'whatsapp_api', ?, ?, ?, ?, 'pending', ?, ?, 's', ?, ?)`).run(
+      orderId, name, from, body.slice(0, 500), timestamp, from || 'WhatsApp API', msg.id, webhookReceivedAt, webhookReceivedAtMs
     );
     pending = { id: orderId };
   }
@@ -124,6 +126,8 @@ function handleInbound(db, msg, value) {
 
 function handleStatus(db, status, value) {
   if (!status.id || !status.status) return;
+  const ackAt = new Date().toISOString();
+  const ackAtMs = Date.now();
   const timestamp = metaTimestamp(status.timestamp);
   const existing = db.prepare('SELECT id, raw_json FROM wa_events WHERE wa_message_id = ? AND direction = ?').get(status.id, 'status');
   if (!existing) {
@@ -141,8 +145,11 @@ function handleStatus(db, status, value) {
   const order = db.prepare(`SELECT * FROM orders WHERE source = 'whatsapp_api' AND customer_phone = ? AND status = 'pending' ORDER BY order_at DESC LIMIT 1`).get(status.recipient_id || '');
   if (!order) return;
   const responseMs = Math.max(0, new Date(timestamp).getTime() - new Date(order.order_at).getTime());
-  db.prepare(`UPDATE orders SET responder_name = COALESCE(responder_name, 'Empresa/API'), responded_at = COALESCE(responded_at, ?), response_seconds = COALESCE(response_seconds, ?), response_ms = COALESCE(response_ms, ?), response_message = COALESCE(response_message, '[mensaje enviado por API]'), response_wa_message_id = COALESCE(response_wa_message_id, ?), timing_precision = 's', status = 'answered' WHERE id = ?`).run(
-    timestamp, responseMs / 1000, responseMs, status.id, order.id
+  const observedResponseMs = order.webhook_received_at_ms != null
+    ? Math.max(0, ackAtMs - order.webhook_received_at_ms)
+    : null;
+  db.prepare(`UPDATE orders SET responder_name = COALESCE(responder_name, 'Empresa/API'), responded_at = COALESCE(responded_at, ?), response_seconds = COALESCE(response_seconds, ?), response_ms = COALESCE(response_ms, ?), response_message = COALESCE(response_message, '[mensaje enviado por API]'), response_wa_message_id = COALESCE(response_wa_message_id, ?), response_ack_at = COALESCE(response_ack_at, ?), response_ack_at_ms = COALESCE(response_ack_at_ms, ?), observed_response_ms = COALESCE(observed_response_ms, ?), timing_precision = 's', status = 'answered' WHERE id = ?`).run(
+    timestamp, responseMs / 1000, responseMs, status.id, ackAt, ackAtMs, observedResponseMs, order.id
   );
   db.prepare('UPDATE wa_events SET order_id = ? WHERE wa_message_id = ? AND direction = ?').run(order.id, status.id, 'status');
 }

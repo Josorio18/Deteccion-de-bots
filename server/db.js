@@ -44,6 +44,11 @@ db.exec(`
     timing_precision TEXT DEFAULT 's',
     inbound_wa_message_id TEXT,
     response_wa_message_id TEXT,
+    webhook_received_at TEXT,
+    webhook_received_at_ms INTEGER,
+    response_ack_at TEXT,
+    response_ack_at_ms INTEGER,
+    observed_response_ms INTEGER,
     operator_id TEXT,
     network_type TEXT,
     effective_type TEXT,
@@ -96,6 +101,31 @@ try {
 }
 try {
   db.exec('ALTER TABLE orders ADD COLUMN response_wa_message_id TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN webhook_received_at TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN webhook_received_at_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN response_ack_at TEXT');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN response_ack_at_ms INTEGER');
+} catch {
+  /* already exists */
+}
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN observed_response_ms INTEGER');
 } catch {
   /* already exists */
 }
